@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask import Flask,render_template,jsonify,json,request
 from fabric.api import *
+from bson.json_util import dumps
 
 application = Flask(__name__)
 
@@ -12,7 +13,7 @@ db = client.mydb1
 def addCustomer():
     try:
         json_data = request.json['info']
-        # json_data:  { device: "", ip: "", username:"", password:"" }
+        # json_data:  { name: "", address: "", email:"", phone: "" }
         db.customers.insert(json_data);        
         return jsonify(status='OK',message='inserted successfully')
     except Exception,e:
@@ -26,16 +27,8 @@ def showCustomerList():
 def getCustomer():
     try:
         CustomerId = request.json['customer_id']
-        Customer = db.customers.find_one({'customer_id': CustomerId})
-        CustomerDetail = {
-                'customer_id':Customer['customer_id'],
-                'name':Customer['name'],
-                'phone':Customer['phone'],                
-                'address':Customer['address'],                
-                'email':Customer['email']                
-                }
-        print "*** ", CustomerDetail
-        return json.dumps(CustomerDetail)
+        Customer = db.customers.find_one({'customer_id': CustomerId})        
+        return dumps(Customer)
     except Exception, e:
         print(e)
         return str(e)
@@ -49,14 +42,15 @@ def updateCustomer():
         phone = CustomerInfo['phone']
         address = CustomerInfo['address']
         email = CustomerInfo['email']
-        
-        db.customers.update({'customer_id': customer_id},{'$set':{'customer_id':customer_id,
-            'name': name,
-            'phone': phone,
-            'address':address,
-            'email':email}})
+        del CustomerInfo["_id"]
+        print("#Updating "+ customer_id)
+        print(CustomerInfo)
+        print(db.customers.update({'customer_id': customer_id},{'$set': CustomerInfo}))
+        print("FINISHI UPDATE")
         return jsonify(status='OK',message='updated successfully')
     except Exception, e:
+        print("ERROR Updating")
+        print(e)
         return jsonify(status='ERROR',message=str(e))
 
 @application.route("/getCustomerList",methods=['POST'])
@@ -66,8 +60,7 @@ def getCustomerList():
 
         CustomerList = []
         for Customer in customers:
-            print "####### !!!"
-            print Customer
+            print "Iterating"  + Customer['customer_id']
             
             CustomerItem = {
                     'customer_id':Customer['customer_id'],
@@ -76,14 +69,13 @@ def getCustomerList():
                     'address':Customer['address'],
                     'email':Customer['email']                    
                     }
-            CustomerList.append(CustomerItem)
+            #CustomerList.append(CustomerItem)
+            CustomerList.append(Customer)
     except Exception,e:
         print(e)
         return str(e)
-    print("=====1")
-    print json.dumps(CustomerList)
-    print("=====2")
-    return json.dumps(CustomerList)
+    
+    return dumps(CustomerList)
 
 @application.route("/execute",methods=['POST'])
 def execute():
