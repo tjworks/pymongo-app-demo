@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from bson.objectid import ObjectId
 from flask import Flask,render_template,jsonify,json,request
 from fabric.api import *
 from bson.json_util import dumps
@@ -38,18 +37,10 @@ def updateCustomer():
     try:
         CustomerInfo = request.json['info']
         customer_id = CustomerInfo['customer_id']
-        name = CustomerInfo['name']
-        phone = CustomerInfo['phone']
-        address = CustomerInfo['address']
-        email = CustomerInfo['email']
         del CustomerInfo["_id"]
-        print("#Updating "+ customer_id)
-        print(CustomerInfo)
-        print(db.customers.update({'customer_id': customer_id},{'$set': CustomerInfo}))
-        print("FINISHI UPDATE")
+        db.customers.update({'customer_id': customer_id},{'$set': CustomerInfo})        
         return jsonify(status='OK',message='updated successfully')
     except Exception, e:
-        print("ERROR Updating")
         print(e)
         return jsonify(status='ERROR',message=str(e))
 
@@ -59,47 +50,13 @@ def getCustomerList():
         customers = db.customers.find();
 
         CustomerList = []
-        for Customer in customers:
-            print "Iterating"  + Customer['customer_id']
-            
-            CustomerItem = {
-                    'customer_id':Customer['customer_id'],
-                    'name':Customer['name'],
-                    'phone':Customer['phone'],
-                    'address':Customer['address'],
-                    'email':Customer['email']                    
-                    }
-            #CustomerList.append(CustomerItem)
+        for Customer in customers:         
             CustomerList.append(Customer)
     except Exception,e:
         print(e)
         return str(e)
     
     return dumps(CustomerList)
-
-@application.route("/execute",methods=['POST'])
-def execute():
-    try:
-        CustomerInfo = request.json['info']
-        ip = CustomerInfo['ip']
-        username = CustomerInfo['username']
-        password = CustomerInfo['password']
-        command = CustomerInfo['command']
-        isRoot = CustomerInfo['isRoot']
-        
-        env.host_string = username + '@' + ip
-        env.password = password
-        resp = ''
-        with settings(warn_only=True):
-            if isRoot:
-                resp = sudo(command)
-            else:
-                resp = run(command)
-
-        return jsonify(status='OK',message=resp)
-    except Exception, e:
-        print 'Error is ' + str(e)
-        return jsonify(status='ERROR',message=str(e))
 
 @application.route("/deleteCustomer",methods=['POST'])
 def deleteCustomer():
