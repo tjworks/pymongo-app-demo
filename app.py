@@ -5,7 +5,7 @@ from bson.json_util import dumps
 
 application = Flask(__name__)
 
-client = MongoClient('mongodb:27017')
+client = MongoClient('localhost:27017')
 db = client.mydb1
 
 @application.route("/addCustomer",methods=['POST'])
